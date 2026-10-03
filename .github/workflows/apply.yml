@@ -41,8 +41,7 @@ jobs:
       - name: Write Terraform variables
         env:
           TF_VARS: ${{ secrets.INFRA_TFVARS }}
-        run: printf '%s
-' "$TF_VARS" > infra/ci.auto.tfvars
+        run: echo "$TF_VARS" > infra/ci.auto.tfvars
 
       - name: Terraform init
         working-directory: infra

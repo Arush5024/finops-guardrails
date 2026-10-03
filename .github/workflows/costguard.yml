@@ -101,8 +101,7 @@ jobs:
         env:
           TF_VARS: ${{ secrets.TF_VARS }}
         run: |
-          if [ -n "$TF_VARS" ]; then printf '%s
-' "$TF_VARS" > "$STACK_DIR/ci.auto.tfvars"; fi
+          if [ -n "$TF_VARS" ]; then echo "$TF_VARS" > "$STACK_DIR/ci.auto.tfvars"; fi
 
       - name: Terraform init
         working-directory: ${{ inputs.working_directory }}
