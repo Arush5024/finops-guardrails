@@ -41,5 +41,5 @@ Testing the reaper needs real idle resources for a short time: a `t4g.nano` inst
 | NAT gateway | about $40/month | Lambdas run outside a VPC |
 | AWS Config rules | per configuration item and per evaluation | EventBridge + Lambda for tag enforcement |
 | DynamoDB lock table | small, but another resource | S3 native state locking |
-| Applying the demo stack | about $700/month if left running | Plan-only fixtures |
+| Applying the demo stack | $868/month (Infracost estimate) if left running | Plan-only fixtures |
 | Slack forwarder Lambda | negligible, but more moving parts | Email alerts |
