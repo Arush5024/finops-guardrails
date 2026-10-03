@@ -165,6 +165,7 @@ The reason for two: code in a pull request has not been reviewed yet. It must ne
 |---|---|
 | 28 policy tests | Each rule fires when it should and stays quiet when it should |
 | 6 script tests | The verdict logic and the comment formatting are right |
+| 27 function tests | Each guardrail function behaves correctly against a simulated AWS: what it flags, what it ignores, and that it stops nothing in dry-run mode |
 | End-to-end test | Real Terraform plans of both demo stacks give the expected verdicts |
 | Format, validate, lint | The Terraform code is well formed |
 
