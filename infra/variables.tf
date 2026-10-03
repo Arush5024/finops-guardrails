@@ -59,3 +59,9 @@ variable "anomaly_monitor_arn" {
   type        = string
   default     = null
 }
+
+variable "guardrails_dry_run" {
+  description = "When true, the runtime guardrails report findings but never stop anything."
+  type        = bool
+  default     = true
+}

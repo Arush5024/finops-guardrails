@@ -15,13 +15,12 @@ Estimates for ap-south-1 (Mumbai) at on-demand prices, assuming **no free tier**
 | Infracost | Free tier of the hosted pricing API | $0 |
 | Example stacks | Plan-only with mock credentials, never applied | $0 |
 
-## Planned runtime guardrails
+## Runtime guardrails
 
 | Component | How it is billed | Estimate per month |
 |---|---|---:|
 | Lambda (reaper, tag enforcer, scheduler, digest) | About 100 short invocations | under $0.01 |
 | EventBridge rules and schedules | AWS service events are free; schedules are about $1 per million | under $0.01 |
-| CloudTrail | First copy of management events is free; S3 storage for the trail | $0.01 to $0.05 |
 | DynamoDB findings table (on-demand) | A few hundred small writes and reads | under $0.01 |
 | CloudWatch Logs (14-day retention) | A few MB ingested | under $0.05 |
 | CloudWatch metric reads by the reaper | $0.01 per 1,000 metrics requested | under $0.01 |
@@ -40,6 +39,7 @@ Testing the reaper needs real idle resources for a short time: a `t4g.nano` inst
 |---|---|---|
 | NAT gateway | about $40/month | Lambdas run outside a VPC |
 | AWS Config rules | per configuration item and per evaluation | EventBridge + Lambda for tag enforcement |
+| CloudTrail trail | S3 storage, plus a second trail is billed per event | EC2's native state-change events |
 | DynamoDB lock table | small, but another resource | S3 native state locking |
 | Applying the demo stack | $868/month (Infracost estimate) if left running | Plan-only fixtures |
 | Slack forwarder Lambda | negligible, but more moving parts | Email alerts |
