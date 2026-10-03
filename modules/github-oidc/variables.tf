@@ -8,6 +8,18 @@ variable "github_repo" {
   }
 }
 
+variable "github_owner_id" {
+  description = "Numeric ID of the repository owner. Set together with github_repo_id for repositories whose OIDC tokens use immutable subject claims."
+  type        = string
+  default     = null
+}
+
+variable "github_repo_id" {
+  description = "Numeric ID of the repository. Set together with github_owner_id."
+  type        = string
+  default     = null
+}
+
 variable "state_bucket" {
   description = "Terraform state bucket the plan role needs lock access to."
   type        = string

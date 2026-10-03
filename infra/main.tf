@@ -36,8 +36,10 @@ provider "aws" {
 module "github_oidc" {
   source = "../modules/github-oidc"
 
-  github_repo  = var.github_repo
-  state_bucket = var.state_bucket
+  github_repo     = var.github_repo
+  github_owner_id = var.github_owner_id
+  github_repo_id  = var.github_repo_id
+  state_bucket    = var.state_bucket
 
   # The apply role creates IAM roles for the guardrail Lambdas, so it needs
   # IAM write access. It is only assumable from the protected "production"

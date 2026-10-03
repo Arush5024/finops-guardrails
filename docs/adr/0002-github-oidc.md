@@ -17,6 +17,10 @@ No AWS keys are stored in GitHub. Workflows exchange a GitHub OIDC token for sho
 - Pull request code is untrusted until reviewed. It only ever gets a read-only role, so a malicious PR cannot change infrastructure.
 - Tying the apply role to an environment, not a branch, lets GitHub enforce required reviewers before any write.
 
+## Subject claim format
+
+AWS matches the token's `sub` claim exactly. Newer GitHub repositories issue it in an immutable form, `repo:owner@owner_id/name@repo_id:...`, so that a re-registered owner or repository name cannot inherit the trust. The module builds that form when `github_owner_id` and `github_repo_id` are set. The first pipeline run against AWS failed on this; the actual claim was read from the failed `AssumeRoleWithWebIdentity` event in CloudTrail.
+
 ## Consequences
 
 - The first apply of `infra/` must be run locally, because the roles do not exist yet.

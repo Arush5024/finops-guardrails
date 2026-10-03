@@ -19,6 +19,14 @@ terraform {
 locals {
   oidc_url          = "token.actions.githubusercontent.com"
   oidc_provider_arn = var.create_oidc_provider ? aws_iam_openid_connect_provider.github[0].arn : var.existing_oidc_provider_arn
+
+  # GitHub's token names the repository in its "sub" claim. Newer repositories
+  # get the immutable form, owner@owner_id/name@repo_id, which stops a
+  # re-registered owner or repository name from inheriting this trust.
+  owner      = split("/", var.github_repo)[0]
+  repo       = split("/", var.github_repo)[1]
+  immutable  = var.github_owner_id != null && var.github_repo_id != null
+  repository = local.immutable ? "${local.owner}@${var.github_owner_id}/${local.repo}@${var.github_repo_id}" : var.github_repo
 }
 
 resource "aws_iam_openid_connect_provider" "github" {
@@ -47,8 +55,8 @@ data "aws_iam_policy_document" "plan_trust" {
       test     = "StringLike"
       variable = "${local.oidc_url}:sub"
       values = [
-        "repo:${var.github_repo}:pull_request",
-        "repo:${var.github_repo}:ref:refs/heads/main",
+        "repo:${local.repository}:pull_request",
+        "repo:${local.repository}:ref:refs/heads/main",
       ]
     }
   }
@@ -72,7 +80,7 @@ data "aws_iam_policy_document" "apply_trust" {
     condition {
       test     = "StringEquals"
       variable = "${local.oidc_url}:sub"
-      values   = ["repo:${var.github_repo}:environment:${var.apply_environment}"]
+      values   = ["repo:${local.repository}:environment:${var.apply_environment}"]
     }
   }
 }

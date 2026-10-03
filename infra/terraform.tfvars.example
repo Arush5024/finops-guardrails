@@ -1,6 +1,12 @@
 # Copy to terraform.tfvars (gitignored) and fill in.
 owner        = "arush"
 github_repo  = "Arush5024/finops-guardrails"
+
+# Needed if the repository's OIDC tokens use immutable subject claims
+# (owner@id/repo@id). Find them with: gh api repos/<owner>/<repo> --jq '.owner.id, .id'
+# github_owner_id = "123456"
+# github_repo_id  = "987654321"
+
 state_bucket = "finops-guardrails-tfstate-<account-id>"
 alert_emails = ["you@example.com"]
 

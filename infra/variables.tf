@@ -14,6 +14,18 @@ variable "github_repo" {
   type        = string
 }
 
+variable "github_owner_id" {
+  description = "Numeric ID of the repository owner, for immutable OIDC subject claims."
+  type        = string
+  default     = null
+}
+
+variable "github_repo_id" {
+  description = "Numeric ID of the repository, for immutable OIDC subject claims."
+  type        = string
+  default     = null
+}
+
 variable "state_bucket" {
   description = "Terraform state bucket created by bootstrap/."
   type        = string
