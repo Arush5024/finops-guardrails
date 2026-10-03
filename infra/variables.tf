@@ -22,6 +22,18 @@ variable "state_bucket" {
 variable "alert_emails" {
   description = "Email addresses that receive cost alerts."
   type        = list(string)
+  sensitive   = true
+}
+
+variable "budget_alert_thresholds_percent" {
+  description = "Percentages of the monthly budget at which an alert is sent. At most four: a budget allows five alerts and one is used for the forecast."
+  type        = list(number)
+  default     = [20, 50, 80, 100]
+
+  validation {
+    condition     = length(var.budget_alert_thresholds_percent) <= 4
+    error_message = "At most four thresholds are allowed."
+  }
 }
 
 variable "monthly_budget_usd" {

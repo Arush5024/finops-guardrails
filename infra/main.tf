@@ -48,6 +48,7 @@ module "github_oidc" {
 module "budget_alerts" {
   source = "../modules/budget-alerts"
 
-  alert_emails      = var.alert_emails
-  monthly_limit_usd = var.monthly_budget_usd
+  alert_emails              = var.alert_emails
+  monthly_limit_usd         = var.monthly_budget_usd
+  actual_thresholds_percent = var.budget_alert_thresholds_percent
 }
