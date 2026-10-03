@@ -88,3 +88,11 @@ module "offhours_scheduler" {
 
   dry_run = var.guardrails_dry_run
 }
+
+module "weekly_digest" {
+  source = "../modules/weekly-digest"
+
+  topic_arn          = module.notifications.topic_arn
+  monthly_budget_usd = var.monthly_budget_usd
+  schedule_enabled   = var.weekly_digest_enabled
+}

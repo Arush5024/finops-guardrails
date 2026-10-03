@@ -124,11 +124,7 @@ These live in a real AWS account and are created by Terraform from the `infra/` 
 
 All three start in "dry run" mode: they report what they find but stop nothing until enforcement is switched on. A resource tagged `finops:exempt = true` is ignored.
 
-**Planned**
-
-| Piece | What it will do |
-|---|---|
-| **Weekly digest** | An email summarising what was found and how much was saved |
+**The weekly digest** is a fourth function that only reads. It emails one summary: what was spent in the last 7 days compared with the 7 before, how much of the monthly budget is used, and everything the other functions still have flagged, with an estimate of the monthly waste. It can run every Monday, or be left off and triggered by hand, since each run makes one small paid query to AWS Cost Explorer.
 
 ## 6. How GitHub gets into AWS without a password
 

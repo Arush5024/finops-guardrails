@@ -22,6 +22,9 @@ data "archive_file" "source" {
   source_dir  = var.source_dir
   output_path = "${path.module}/build/${var.name}.zip"
   excludes    = ["__pycache__/**"]
+
+  # Fixed permissions, so the archive hash is the same on every platform.
+  output_file_mode = "0644"
 }
 
 resource "aws_cloudwatch_log_group" "this" {
