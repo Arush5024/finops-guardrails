@@ -217,3 +217,5 @@ A few cents a month in ap-south-1, without relying on the free tier. The breakdo
 - Anyone with triage permission can add the `cost-approved` label.
 - The idle reaper works in one region.
 - Checkov runs in report-only mode.
+
+Merges to `main` require the `CostGuard gate` check, which fails if any other check on the pull request failed.
