@@ -89,6 +89,26 @@ def test_no_markers_means_no_findings(ec2):
     assert digest.collect_findings(ec2, TODAY, CFG) == ([], [])
 
 
+def test_deleted_and_terminated_resources_are_not_reported(ec2):
+    # AWS keeps returning a resource's tags for a while after it is gone.
+    volume_id = ec2.create_volume(AvailabilityZone=f"{REGION}a", Size=1, VolumeType="gp3")["VolumeId"]
+    instance_id = ec2.run_instances(ImageId="ami-12345678", InstanceType="t3.micro", MinCount=1, MaxCount=1)["Instances"][0]["InstanceId"]
+    kept_id = ec2.allocate_address(Domain="vpc")["AllocationId"]
+    tag(ec2, instance_id, digest.UNTAGGED_SINCE_TAG, "2026-10-18T12:37Z")
+    tag(ec2, instance_id, digest.STOPPED_BY_TAG, "tag-enforcer")
+    tag(ec2, kept_id, digest.IDLE_SINCE_TAG, "2026-10-17")
+    ec2.terminate_instances(InstanceIds=[instance_id])
+
+    lingering = {"ResourceId": volume_id, "ResourceType": "volume", "Key": digest.UNTAGGED_SINCE_TAG, "Value": "2026-10-18T12:38Z"}
+    ec2.delete_volume(VolumeId=volume_id)
+    assert digest.existing(ec2, [lingering]) == set()
+
+    findings, stopped = digest.collect_findings(ec2, TODAY, CFG)
+
+    assert [f["id"] for f in findings] == [kept_id]
+    assert stopped == []
+
+
 def test_unparseable_marker_date_is_reported_without_age(ec2):
     volume_id = ec2.create_volume(AvailabilityZone=f"{REGION}a", Size=1, VolumeType="gp3")["VolumeId"]
     tag(ec2, volume_id, digest.UNTAGGED_SINCE_TAG, "yesterday")

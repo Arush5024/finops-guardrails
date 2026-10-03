@@ -26,7 +26,7 @@ data "aws_iam_policy_document" "permissions" {
   # Read only: the digest reports on findings, it never changes a resource.
   statement {
     sid       = "ReadFindings"
-    actions   = ["ec2:DescribeTags", "ec2:DescribeVolumes"]
+    actions   = ["ec2:DescribeTags", "ec2:DescribeVolumes", "ec2:DescribeAddresses", "ec2:DescribeInstances"]
     resources = ["*"]
   }
 
