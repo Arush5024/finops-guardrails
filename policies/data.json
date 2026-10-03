@@ -1,0 +1,17 @@
+{
+  "finops": {
+    "required_tags": ["Owner", "Environment", "CostCenter"],
+    "allowed_instance_types": [
+      "t3.nano", "t3.micro", "t3.small", "t3.medium",
+      "t4g.nano", "t4g.micro", "t4g.small", "t4g.medium"
+    ],
+    "allowed_db_instance_classes": [
+      "db.t3.micro", "db.t3.small", "db.t4g.micro", "db.t4g.small"
+    ],
+    "production_environments": ["prod", "production"],
+    "cost": {
+      "max_monthly_increase_usd": 20,
+      "max_total_monthly_usd": 100
+    }
+  }
+}

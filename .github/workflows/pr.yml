@@ -1,0 +1,140 @@
+name: Pull request
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: Static checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive -diff
+
+      - name: terraform validate
+        run: |
+          for dir in bootstrap infra examples/*/; do
+            echo "::group::$dir"
+            terraform -chdir="$dir" init -backend=false -input=false
+            terraform -chdir="$dir" validate
+            echo "::endgroup::"
+          done
+
+      - uses: terraform-linters/setup-tflint@v4
+
+      - name: tflint
+        run: |
+          tflint --init
+          tflint --recursive --config "$GITHUB_WORKSPACE/.tflint.hcl"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: .
+          framework: terraform
+          skip_path: examples
+          quiet: true
+          # Report only for now; made blocking once the baseline is clean.
+          soft_fail: true
+
+      - uses: open-policy-agent/setup-opa@v2
+        with:
+          version: latest
+
+      - name: Policy unit tests
+        run: opa test policies -v
+
+      - name: Script unit tests
+        run: |
+          python3 -m pip install --quiet pytest
+          python3 -m pytest -q tests
+
+      - name: End-to-end check against the example stacks
+        run: bash tests/e2e.sh
+
+  # Works out which Terraform stacks this pull request touches.
+  changes:
+    name: Detect changed stacks
+    runs-on: ubuntu-latest
+    outputs:
+      infra: ${{ steps.diff.outputs.infra }}
+      examples: ${{ steps.diff.outputs.examples }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          changed=$(git diff --name-only "$BASE...$HEAD")
+          echo "$changed"
+
+          # A change to the policies or the script re-checks the real infra.
+          infra=false
+          if echo "$changed" | grep -qE '^(infra|modules|policies|scripts)/'; then infra=true; fi
+          echo "infra=$infra" >> "$GITHUB_OUTPUT"
+
+          # Example stacks are only checked when they change themselves:
+          # wasteful-stack is meant to fail, so it must not block other PRs.
+          examples=$(for dir in examples/*/; do
+            dir=${dir%/}
+            if echo "$changed" | grep -q "^$dir/"; then echo "$dir"; fi
+          done | jq -Rnc '[inputs]')
+          echo "examples=$examples" >> "$GITHUB_OUTPUT"
+
+  costguard-infra:
+    name: Infra
+    needs: changes
+    # Needs the OIDC plan role, which exists once infra has been applied once.
+    if: needs.changes.outputs.infra == 'true' && vars.AWS_PLAN_ROLE_ARN != ''
+    uses: ./.github/workflows/costguard.yml
+    with:
+      working_directory: infra
+      aws_role_arn: ${{ vars.AWS_PLAN_ROLE_ARN }}
+      backend_config: bucket=${{ vars.TF_STATE_BUCKET }} region=ap-south-1
+      plan_args: >-
+        -var=owner=${{ vars.TF_OWNER }}
+        -var=github_repo=${{ github.repository }}
+        -var=state_bucket=${{ vars.TF_STATE_BUCKET }}
+        -var=alert_emails=["${{ vars.ALERT_EMAIL }}"]
+      guardrails_repository: ${{ github.repository }}
+      guardrails_ref: ${{ github.event.pull_request.head.sha }}
+    secrets:
+      INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+
+  costguard-examples:
+    name: Examples
+    needs: changes
+    if: needs.changes.outputs.examples != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        stack: ${{ fromJSON(needs.changes.outputs.examples) }}
+    uses: ./.github/workflows/costguard.yml
+    with:
+      working_directory: ${{ matrix.stack }}
+      guardrails_repository: ${{ github.repository }}
+      guardrails_ref: ${{ github.event.pull_request.head.sha }}
+    secrets:
+      INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}

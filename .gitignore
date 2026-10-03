@@ -1,0 +1,21 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+plan.json
+crash.log
+*_override.tf
+*.auto.tfvars
+terraform.tfvars
+backend.hcl
+
+# CostGuard outputs
+infracost.json
+comment.md
+
+# Python
+__pycache__/
+.pytest_cache/
+.venv/
+*.zip

@@ -1,0 +1,151 @@
+# Reusable workflow: plan one Terraform stack, estimate its cost, evaluate the
+# cost policies, and post the result as a pull request comment.
+#
+# Call it from another workflow:
+#
+#   jobs:
+#     costguard:
+#       uses: Arush5024/finops-guardrails/.github/workflows/costguard.yml@main
+#       with:
+#         working_directory: infra
+#         aws_role_arn: ${{ vars.AWS_PLAN_ROLE_ARN }}
+#       secrets:
+#         INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+
+name: CostGuard
+
+on:
+  workflow_call:
+    inputs:
+      working_directory:
+        description: Directory of the Terraform stack to check.
+        required: true
+        type: string
+      aws_role_arn:
+        description: Read-only role to assume for the plan. Leave empty for stacks that need no AWS access.
+        required: false
+        type: string
+        default: ""
+      aws_region:
+        required: false
+        type: string
+        default: ap-south-1
+      backend_config:
+        description: Space-separated -backend-config values, e.g. "bucket=my-state region=ap-south-1".
+        required: false
+        type: string
+        default: ""
+      plan_args:
+        description: Extra arguments for terraform plan.
+        required: false
+        type: string
+        default: ""
+      guardrails_repository:
+        description: Repository holding the policies and the CostGuard script.
+        required: false
+        type: string
+        default: Arush5024/finops-guardrails
+      guardrails_ref:
+        required: false
+        type: string
+        default: main
+    secrets:
+      INFRACOST_API_KEY:
+        required: false
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+jobs:
+  costguard:
+    name: CostGuard (${{ inputs.working_directory }})
+    runs-on: ubuntu-latest
+    env:
+      TF_IN_AUTOMATION: "1"
+      TF_INPUT: "0"
+      INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+      STACK_DIR: ${{ inputs.working_directory }}
+
+    steps:
+      - name: Check out the stack
+        uses: actions/checkout@v4
+
+      - name: Check out the guardrails
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.guardrails_repository }}
+          ref: ${{ inputs.guardrails_ref }}
+          path: .guardrails
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - uses: open-policy-agent/setup-opa@v2
+        with:
+          version: latest
+
+      - name: Configure AWS credentials (OIDC)
+        if: inputs.aws_role_arn != ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.aws_role_arn }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Terraform init
+        working-directory: ${{ inputs.working_directory }}
+        env:
+          BACKEND_CONFIG: ${{ inputs.backend_config }}
+        run: |
+          args=()
+          for item in $BACKEND_CONFIG; do args+=("-backend-config=$item"); done
+          terraform init "${args[@]}"
+
+      - name: Terraform plan
+        working-directory: ${{ inputs.working_directory }}
+        env:
+          PLAN_ARGS: ${{ inputs.plan_args }}
+        run: |
+          terraform plan -out=tfplan $PLAN_ARGS
+          terraform show -json tfplan > "$RUNNER_TEMP/plan.json"
+
+      - name: Set up Infracost
+        if: env.INFRACOST_API_KEY != ''
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Estimate cost
+        if: env.INFRACOST_API_KEY != ''
+        run: |
+          infracost diff --path "$RUNNER_TEMP/plan.json" --format json --out-file "$RUNNER_TEMP/infracost.json"
+
+      - name: Evaluate policies
+        id: evaluate
+        env:
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          set +e
+          python3 .guardrails/scripts/costguard.py \
+            --plan "$RUNNER_TEMP/plan.json" \
+            --infracost "$RUNNER_TEMP/infracost.json" \
+            --policies .guardrails/policies \
+            --target "$STACK_DIR" \
+            --labels "$LABELS" \
+            --out "$RUNNER_TEMP/comment.md"
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          cat "$RUNNER_TEMP/comment.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment on the pull request
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: costguard-${{ inputs.working_directory }}
+          path: ${{ runner.temp }}/comment.md
+
+      - name: Enforce result
+        env:
+          EXIT_CODE: ${{ steps.evaluate.outputs.exit_code }}
+        run: exit "$EXIT_CODE"

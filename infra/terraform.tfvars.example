@@ -1,0 +1,7 @@
+# Copy to terraform.tfvars (gitignored) and fill in.
+owner        = "arush"
+github_repo  = "Arush5024/finops-guardrails"
+state_bucket = "finops-guardrails-tfstate-<account-id>"
+alert_emails = ["you@example.com"]
+
+monthly_budget_usd = 10

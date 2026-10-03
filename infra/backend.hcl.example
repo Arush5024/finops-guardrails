@@ -1,0 +1,4 @@
+# Copy to backend.hcl and fill in the bucket name printed by bootstrap/.
+# Then: terraform init -backend-config=backend.hcl
+bucket = "finops-guardrails-tfstate-<account-id>"
+region = "ap-south-1"
