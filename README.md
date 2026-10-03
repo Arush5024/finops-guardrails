@@ -5,8 +5,6 @@ Cost guardrails for AWS, managed with Terraform. It stops cloud waste at two poi
 - **Before merge.** A GitHub Actions bot ("CostGuard") plans every Terraform pull request, estimates the monthly cost change, checks the plan against cost policies written in Rego, and comments the result on the PR. Violations block the merge.
 - **After deploy.** Budgets, anomaly detection, and Lambda functions that find idle and untagged resources in the account and switch off development servers outside working hours.
 
-> Status: the PR bot, policies, OIDC roles, budget alerts and runtime guardrails are built. The weekly digest is next. See [Roadmap](#roadmap).
-
 ## What the bot checks
 
 | Rule | Result | Why |
@@ -34,8 +32,9 @@ modules/
   idle-reaper/      daily search for unattached volumes, unused IPs, idle instances
   tag-enforcer/     catches instances and volumes created without required tags
   offhours-scheduler/  stops opted-in instances at night, starts them in the morning
+  weekly-digest/    summary email of spend and open findings
   lambda-function/  shared building block: function, role, expiring log group
-lambdas/            Python source for the three guardrail functions
+lambdas/            Python source for the four guardrail functions
 policies/           Rego policies and their unit tests
 scripts/            costguard.py: evaluates policies, renders the PR comment
 examples/           plan-only stacks used to demo and regression-test the bot
@@ -73,8 +72,15 @@ cd examples/wasteful-stack && terraform init && terraform plan -out=tfplan && te
 | Idle reaper | Daily | Unattached volumes, unassociated Elastic IPs, instances whose CPU never passes 5% in 72 hours | Tags the resource `finops:idle-since`, emails a report with an estimated monthly waste, stops an instance still idle after 3 days |
 | Tag enforcer | The moment an instance starts running, plus a daily sweep | Instances and unattached volumes missing `Owner`, `Environment` or `CostCenter` | Tags the resource `finops:untagged-since`, emails a report, stops an instance still untagged after 24 hours |
 | Off-hours scheduler | 20:00 and 08:00 on weekdays (Asia/Kolkata) | Instances tagged `Schedule = office-hours` | Stops them in the evening, starts the ones it stopped in the morning |
+| Weekly digest | Mondays, when `weekly_digest_enabled = true`; otherwise on demand | Spend for the last 7 days against the 7 before, month to date against the budget, and everything still flagged | Emails one summary. Read-only. |
 
-Safety rules common to all three:
+To send a digest on demand:
+
+```bash
+aws lambda invoke --function-name finops-guardrails-weekly-digest --payload "{}" --cli-binary-format raw-in-base64-out digest.json
+```
+
+Safety rules common to the three that act on resources:
 
 - They never delete or terminate anything. Their IAM roles do not allow it.
 - They run in dry-run mode by default: findings are reported, nothing is stopped. Set `guardrails_dry_run = false` to enforce.
@@ -118,4 +124,4 @@ Designed to cost well under $1 a month in ap-south-1 without relying on the free
 - [x] Idle resource reaper (Lambda)
 - [x] Tag enforcer for resources created outside Terraform
 - [x] Off-hours scheduler
-- [ ] Weekly savings digest
+- [x] Weekly digest

@@ -65,3 +65,9 @@ variable "guardrails_dry_run" {
   type        = bool
   default     = true
 }
+
+variable "weekly_digest_enabled" {
+  description = "Send the digest automatically every Monday. When false, it is only sent when the function is invoked by hand."
+  type        = bool
+  default     = false
+}

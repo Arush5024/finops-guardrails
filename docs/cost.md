@@ -21,10 +21,9 @@ Estimates for ap-south-1 (Mumbai) at on-demand prices, assuming **no free tier**
 |---|---|---:|
 | Lambda (reaper, tag enforcer, scheduler, digest) | About 100 short invocations | under $0.01 |
 | EventBridge rules and schedules | AWS service events are free; schedules are about $1 per million | under $0.01 |
-| DynamoDB findings table (on-demand) | A few hundred small writes and reads | under $0.01 |
 | CloudWatch Logs (14-day retention) | A few MB ingested | under $0.05 |
 | CloudWatch metric reads by the reaper | $0.01 per 1,000 metrics requested | under $0.01 |
-| Cost Explorer API (weekly digest) | $0.01 per request, 4 to 5 requests | about $0.05 |
+| Cost Explorer API (weekly digest) | $0.01 per request, one request per digest | about $0.05 if scheduled weekly; $0 when the schedule is off |
 | SNS email notifications | $2 per 100,000 emails | under $0.01 |
 
 **Expected total: $0.10 to $0.30 a month, and under $1 in any case.**
@@ -43,3 +42,4 @@ Testing the reaper needs real idle resources for a short time: a `t4g.nano` inst
 | DynamoDB lock table | small, but another resource | S3 native state locking |
 | Applying the demo stack | $868/month (Infracost estimate) if left running | Plan-only fixtures |
 | Slack forwarder Lambda | negligible, but more moving parts | Email alerts |
+| DynamoDB table of findings | small, but another resource to keep in step | Marker tags on the resources themselves |
