@@ -41,3 +41,9 @@ variable "monthly_budget_usd" {
   type        = number
   default     = 10
 }
+
+variable "anomaly_monitor_arn" {
+  description = "ARN of the account's existing per-service cost anomaly monitor. Leave null to create one."
+  type        = string
+  default     = null
+}

@@ -51,4 +51,6 @@ module "budget_alerts" {
   alert_emails              = var.alert_emails
   monthly_limit_usd         = var.monthly_budget_usd
   actual_thresholds_percent = var.budget_alert_thresholds_percent
+
+  existing_anomaly_monitor_arn = var.anomaly_monitor_arn
 }

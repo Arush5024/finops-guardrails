@@ -30,3 +30,9 @@ variable "name_prefix" {
   type        = string
   default     = "finops-guardrails"
 }
+
+variable "existing_anomaly_monitor_arn" {
+  description = "ARN of an existing per-service cost anomaly monitor to reuse. When null, a monitor is created."
+  type        = string
+  default     = null
+}

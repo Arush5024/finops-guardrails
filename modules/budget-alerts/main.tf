@@ -13,6 +13,10 @@ terraform {
   }
 }
 
+locals {
+  anomaly_monitor_arn = var.existing_anomaly_monitor_arn != null ? var.existing_anomaly_monitor_arn : aws_ce_anomaly_monitor.services[0].arn
+}
+
 resource "aws_budgets_budget" "monthly" {
   name         = "${var.name_prefix}-monthly"
   budget_type  = "COST"
@@ -41,7 +45,11 @@ resource "aws_budgets_budget" "monthly" {
   }
 }
 
+# An account may hold only one per-service monitor, and AWS creates a default
+# one in new accounts. Pass its ARN as existing_anomaly_monitor_arn to reuse it.
 resource "aws_ce_anomaly_monitor" "services" {
+  count = var.existing_anomaly_monitor_arn == null ? 1 : 0
+
   name              = "${var.name_prefix}-services"
   monitor_type      = "DIMENSIONAL"
   monitor_dimension = "SERVICE"
@@ -50,7 +58,7 @@ resource "aws_ce_anomaly_monitor" "services" {
 resource "aws_ce_anomaly_subscription" "daily" {
   name             = "${var.name_prefix}-daily"
   frequency        = "DAILY"
-  monitor_arn_list = [aws_ce_anomaly_monitor.services.arn]
+  monitor_arn_list = [local.anomaly_monitor_arn]
 
   dynamic "subscriber" {
     for_each = var.alert_emails
