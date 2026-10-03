@@ -52,6 +52,9 @@ on:
     secrets:
       INFRACOST_API_KEY:
         required: false
+      TF_VARS:
+        description: Contents of a .tfvars file for the stack. Kept as a secret so values never appear in logs.
+        required: false
 
 permissions:
   contents: read
@@ -93,6 +96,13 @@ jobs:
         with:
           role-to-assume: ${{ inputs.aws_role_arn }}
           aws-region: ${{ inputs.aws_region }}
+
+      - name: Write Terraform variables
+        env:
+          TF_VARS: ${{ secrets.TF_VARS }}
+        run: |
+          if [ -n "$TF_VARS" ]; then printf '%s
+' "$TF_VARS" > "$STACK_DIR/ci.auto.tfvars"; fi
 
       - name: Terraform init
         working-directory: ${{ inputs.working_directory }}

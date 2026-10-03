@@ -27,10 +27,6 @@ jobs:
     env:
       TF_IN_AUTOMATION: "1"
       TF_INPUT: "0"
-      TF_VAR_owner: ${{ vars.TF_OWNER }}
-      TF_VAR_github_repo: ${{ github.repository }}
-      TF_VAR_state_bucket: ${{ vars.TF_STATE_BUCKET }}
-      TF_VAR_alert_emails: '["${{ vars.ALERT_EMAIL }}"]'
 
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +37,12 @@ jobs:
         with:
           role-to-assume: ${{ vars.AWS_APPLY_ROLE_ARN }}
           aws-region: ap-south-1
+
+      - name: Write Terraform variables
+        env:
+          TF_VARS: ${{ secrets.INFRA_TFVARS }}
+        run: printf '%s
+' "$TF_VARS" > infra/ci.auto.tfvars
 
       - name: Terraform init
         working-directory: infra

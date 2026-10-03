@@ -81,8 +81,8 @@ jobs:
 3. Apply `infra/` once locally to create the OIDC roles:
    `cd infra && terraform init -backend-config=backend.hcl && terraform apply`
 4. In the GitHub repository settings, add:
-   - Variables: `AWS_PLAN_ROLE_ARN`, `AWS_APPLY_ROLE_ARN`, `TF_STATE_BUCKET`, `TF_OWNER`, `ALERT_EMAIL`
-   - Secret: `INFRACOST_API_KEY`
+   - Variables: `AWS_PLAN_ROLE_ARN`, `AWS_APPLY_ROLE_ARN`, `TF_STATE_BUCKET`
+   - Secrets: `INFRACOST_API_KEY`, and `INFRA_TFVARS` holding the contents of your `infra/terraform.tfvars`
    - Environment: `production`, with yourself as a required reviewer
 
 From then on, pull requests are planned with the read-only role and merges to `main` are applied through the `production` environment.

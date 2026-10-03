@@ -113,15 +113,11 @@ jobs:
       working_directory: infra
       aws_role_arn: ${{ vars.AWS_PLAN_ROLE_ARN }}
       backend_config: bucket=${{ vars.TF_STATE_BUCKET }} region=ap-south-1
-      plan_args: >-
-        -var=owner=${{ vars.TF_OWNER }}
-        -var=github_repo=${{ github.repository }}
-        -var=state_bucket=${{ vars.TF_STATE_BUCKET }}
-        -var=alert_emails=["${{ vars.ALERT_EMAIL }}"]
       guardrails_repository: ${{ github.repository }}
       guardrails_ref: ${{ github.event.pull_request.head.sha }}
     secrets:
       INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+      TF_VARS: ${{ secrets.INFRA_TFVARS }}
 
   costguard-examples:
     name: Examples
