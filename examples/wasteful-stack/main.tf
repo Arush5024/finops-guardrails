@@ -70,7 +70,7 @@ resource "aws_instance" "app" {
 resource "aws_ebs_volume" "scratch" {
   availability_zone = "ap-south-1a"
   type              = "gp2"
-  size              = 500
+  size              = 1000
 }
 
 # Multi-AZ database for a dev workload.
