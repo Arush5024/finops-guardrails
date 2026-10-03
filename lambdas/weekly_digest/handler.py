@@ -105,12 +105,43 @@ def kind_of(tag: dict) -> str:
     return tag["ResourceType"]
 
 
+def existing(ec2, markers: list[dict]) -> set[str]:
+    """Ids among the marked resources that still exist.
+
+    DescribeTags keeps returning the tags of a deleted volume or terminated
+    instance for a while, so a marker alone does not prove the resource is
+    still there.
+    """
+    ids: dict[str, list[str]] = defaultdict(list)
+    for resource_id in {tag["ResourceId"] for tag in markers}:
+        for prefix, kind in KIND_BY_PREFIX.items():
+            if resource_id.startswith(prefix):
+                ids[kind].append(resource_id)
+
+    found: set[str] = set()
+    if ids["volume"]:
+        volumes = ec2.describe_volumes(Filters=[{"Name": "volume-id", "Values": ids["volume"]}])["Volumes"]
+        found |= {volume["VolumeId"] for volume in volumes}
+    if ids["elastic-ip"]:
+        addresses = ec2.describe_addresses(Filters=[{"Name": "allocation-id", "Values": ids["elastic-ip"]}])["Addresses"]
+        found |= {address["AllocationId"] for address in addresses}
+    if ids["instance"]:
+        reservations = ec2.describe_instances(Filters=[
+            {"Name": "instance-id", "Values": ids["instance"]},
+            {"Name": "instance-state-name", "Values": ["pending", "running", "stopping", "stopped"]},
+        ])["Reservations"]
+        found |= {instance["InstanceId"] for reservation in reservations for instance in reservation["Instances"]}
+    return found
+
+
 def collect_findings(ec2, today: date, cfg: dict) -> tuple[list[dict], list[str]]:
     """Returns (open findings, ids of instances stopped by the guardrails)."""
     pages = ec2.get_paginator("describe_tags").paginate(
         Filters=[{"Name": "key", "Values": [IDLE_SINCE_TAG, UNTAGGED_SINCE_TAG, STOPPED_BY_TAG]}]
     )
     markers = [tag for page in pages for tag in page["Tags"]]
+    alive = existing(ec2, markers)
+    markers = [tag for tag in markers if tag["ResourceId"] in alive]
 
     stopped = sorted(tag["ResourceId"] for tag in markers if tag["Key"] == STOPPED_BY_TAG)
     flagged = [tag for tag in markers if tag["Key"] != STOPPED_BY_TAG]
