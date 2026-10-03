@@ -134,3 +134,21 @@ jobs:
       guardrails_ref: ${{ github.event.pull_request.head.sha }}
     secrets:
       INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+
+  # One check that summarises all the others, so branch protection can require
+  # a single name. The CostGuard jobs only run for the stacks a pull request
+  # touches, and a required check that never runs would block every merge.
+  gate:
+    name: CostGuard gate
+    if: always()
+    needs: [static, changes, costguard-infra, costguard-examples]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if any check failed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          case " $RESULTS " in
+            *" failure "* | *" cancelled "*) exit 1 ;;
+          esac
