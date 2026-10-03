@@ -9,6 +9,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.4"
+    }
   }
 
   # bucket and region come from backend.hcl (see backend.hcl.example)
@@ -55,4 +59,32 @@ module "budget_alerts" {
   actual_thresholds_percent = var.budget_alert_thresholds_percent
 
   existing_anomaly_monitor_arn = var.anomaly_monitor_arn
+}
+
+# --- Runtime guardrails: watch what actually exists in the account ---
+
+module "notifications" {
+  source = "../modules/notifications"
+
+  emails = var.alert_emails
+}
+
+module "idle_reaper" {
+  source = "../modules/idle-reaper"
+
+  topic_arn = module.notifications.topic_arn
+  dry_run   = var.guardrails_dry_run
+}
+
+module "tag_enforcer" {
+  source = "../modules/tag-enforcer"
+
+  topic_arn = module.notifications.topic_arn
+  dry_run   = var.guardrails_dry_run
+}
+
+module "offhours_scheduler" {
+  source = "../modules/offhours-scheduler"
+
+  dry_run = var.guardrails_dry_run
 }

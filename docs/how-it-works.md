@@ -118,14 +118,16 @@ These live in a real AWS account and are created by Terraform from the `infra/` 
 | **Keyless GitHub roles** | Let GitHub Actions work in AWS without stored keys (see section 6) |
 | **Budget alerts** | Email when spending passes set percentages of a monthly budget |
 | **Anomaly detection** | Email when a service suddenly costs more than its usual pattern |
+| **Idle resource reaper** | Runs daily. Finds unattached disks, unused IP addresses and servers doing nothing. It labels them and emails a report; a server still idle after 3 days is stopped. It never deletes. |
+| **Tag enforcer** | Runs the moment a server starts, and daily. Catches servers and disks created by hand without the required tags, labels them and emails a report; a server still untagged after 24 hours is stopped. |
+| **Off-hours scheduler** | Stops servers tagged `Schedule = office-hours` at 20:00 on weekdays and starts them again at 08:00. |
+
+All three start in "dry run" mode: they report what they find but stop nothing until enforcement is switched on. A resource tagged `finops:exempt = true` is ignored.
 
 **Planned**
 
 | Piece | What it will do |
 |---|---|
-| **Idle resource reaper** | A scheduled function that finds unattached disks, unused IP addresses and servers doing nothing. It labels them, notifies, and stops them. It never deletes. |
-| **Tag enforcer** | Catches resources created by hand in the console without the required tags |
-| **Off-hours scheduler** | Turns development resources off at night and on weekends |
 | **Weekly digest** | An email summarising what was found and how much was saved |
 
 ## 6. How GitHub gets into AWS without a password

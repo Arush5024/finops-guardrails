@@ -64,7 +64,7 @@ jobs:
 
       - name: Script unit tests
         run: |
-          python3 -m pip install --quiet pytest
+          python3 -m pip install --quiet -r requirements-dev.txt
           python3 -m pytest -q tests
 
       - name: End-to-end check against the example stacks
