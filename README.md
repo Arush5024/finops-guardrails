@@ -23,7 +23,7 @@ It runs for well under $1 a month, and GitHub deploys it to AWS with no stored a
 >
 > **Needs approval (5)** — `aws_instance.app` uses instance type m5.2xlarge, which is outside the approved list · `aws_nat_gateway.main` adds a NAT gateway (about $40/month before data charges) · …
 
-The project's own infrastructure goes through the same check: see pull requests [#2](https://github.com/Arush5024/finops-guardrails/pull/2) and [#3](https://github.com/Arush5024/finops-guardrails/pull/3), which the bot passed before they were deployed.
+The project's own infrastructure goes through the same check: every change to `infra/` is planned, priced and policy-checked on its pull request, and deployed only after a manual approval.
 
 ## Architecture
 
